@@ -13,9 +13,10 @@ class Example(Frame):
         Frame.__init__(self, parent)   
         self.lock = threading.Lock() 
         self.parent = parent
-        
+        self.NUM_SPEAKERS = 5       
         self.initUI()
-        
+        self.num_inserted = []
+
     def on_sync_message(self, bus, message, window_id):
         print "sync message"
         if not message.structure is None:
@@ -95,6 +96,9 @@ class Example(Frame):
         window_id = video.winfo_id()
  
         
+        self.buf = gst.Buffer()
+
+
         self.bin = gst.Bin("my-bin")
         timeoverlay = gst.element_factory_make("timeoverlay", "overlay")
         self.bin.add(timeoverlay)
@@ -124,23 +128,71 @@ class Example(Frame):
                 self.player.set_state(gst.STATE_PAUSED)
                 self.play["text"] = "Play"
 
-        self.play = Button(self, text="Play", command=play_video, width=10)
+        
+        self.play = Button(self, text="Play", command=play_video, width=50)
         self.play.grid(row=5,column=0)
+
+        self.entry = tkinter.Entry(self, width=50)
+        self.entry.grid(row=5, column=1)
+
+        def play_back():
+            pos_int = self.player.query_position(gst.FORMAT_TIME, None)[0]
+            text = self.entry.get()
+            diff = 0
+            if text=="":
+                diff = pos_int - (3*(10**9))
+            else:
+                val = float(self.entry.get())
+                diff = pos_int - (val*(10**9))
+            
+            if diff>0:
+                self.player.seek_simple(gst.FORMAT_TIME, gst.SEEK_FLAG_FLUSH, diff)
+            else:
+                self.player.seek_simple(gst.FORMAT_TIME, gst.SEEK_FLAG_FLUSH, 0)
+ 
+
+        self.back = Button(self, text="Playback", command=play_back, width=50)
+        self.back.grid(row=5, column=2)
 
         #Video embedding done---------------------------------------------------
 
         #Display of symbols
-        display = Text(self, height=2, wrap=tkinter.NONE)
-        display.grid(row=6, column=0, rowspan=3, columnspan=3, sticky=E+W)
+        self.display = Text(self, height=2, wrap=tkinter.NONE)
+        self.display.grid(row=6, column=0, rowspan=3, columnspan=3, sticky=E+W)
 
-        scrollbar = tkinter.Scrollbar(self, orient=tkinter.HORIZONTAL, command=display.xview)
+        scrollbar = tkinter.Scrollbar(self, orient=tkinter.HORIZONTAL, command=self.display.xview)
         scrollbar.grid(row=9,column=0, columnspan=3, sticky=N+S+E+W)
-        display['xscrollcommand'] = scrollbar.set
+        self.display['xscrollcommand'] = scrollbar.set
         #Display done
+       
         
         #Buttons for symbols----------------------------------------------------
         buttongrid = Frame(self)
-        buttongrid.grid(row=0, column=8, rowspan=5, columnspan=4)
+        buttongrid.grid(row=0, column=8, rowspan=7, columnspan=4)
+
+        #Speakers
+        alpha = ['A','B','C','D','E','F','G','H','I','J']
+        s = []
+        self.checkvars = []
+        for i in range(self.NUM_SPEAKERS):
+            s.append(alpha[i])
+            self.checkvars.append(tkinter.IntVar())
+        
+        i=0
+        self.speakers = []
+        colors = ["blue", "green", "yellow", "orange", "pink"]
+        for text in s:
+            if i<3:
+                b = tkinter.Checkbutton(buttongrid, text=text, variable=self.checkvars[i], onvalue = 1, offvalue = 0)
+                self.speakers.append((b, colors[i]))
+                b.grid(row=0, column=(i%3)+3)
+            else:
+                b = tkinter.Checkbutton(buttongrid, text=text, variable=self.checkvars[i], onvalue = 1, offvalue = 0)
+                self.speakers.append((b, colors[i]))
+                b.grid(row=1, column=(i%3)+3)
+            i += 1
+        #Done with speakers
+
 
 
         deflect_image = tkinter.PhotoImage(file="/home/aparna/RA/Framework/symbols/deflection.gif", height=30, width=50)
@@ -155,89 +207,119 @@ class Example(Frame):
         block_image = tkinter.PhotoImage(file="/home/aparna/RA/Framework/symbols/block.gif", height=30, width=50)
         deviation_image = tkinter.PhotoImage(file="/home/aparna/RA/Framework/symbols/deviation.gif", height=30, width=50)
 
+        self.idea_var = tkinter.IntVar()
 
         def update_symbols(text):
-            #main_bin = self.player.get_by_name("my-bin")
-            #overlay = main_bin.get_by_name("overlay")
-            #print overlay.props.text 
+            
+            
+            #self.display.edit_separator()
+            #Stores timestamp
+            timestamp = self.player.query_position(gst.FORMAT_TIME, None)[0]
+            print timestamp
+
+            #Stores current speakers
+            current_speakers = []
+            for i in range(len(self.speakers)):
+                if self.checkvars[i].get() == 1:
+                    current_speakers.append((self.speakers[i][0]['text'], self.speakers[i][1]))
 
             if text=="deflection":
-                display.image_create(tkinter.END, image= deflect_image)
+                self.display.image_create(tkinter.END, image= deflect_image)
             elif text=="question":
-                display.image_create(tkinter.END, image= question_image)
+                self.display.image_create(tkinter.END, image= question_image)
             elif text=="hesitation":
-                display.image_create(tkinter.END, image= hesitation_image)
+                self.display.image_create(tkinter.END, image= hesitation_image)
             elif text=="interrupt":
-                display.image_create(tkinter.END, image= interrupt_image)
+                self.display.image_create(tkinter.END, image= interrupt_image)
             elif text=="overcoming":
-                display.image_create(tkinter.END, image= overcoming_image)
+                self.display.image_create(tkinter.END, image= overcoming_image)
             elif text=="support":
-                display.image_create(tkinter.END, image= support_image)
+                self.display.image_create(tkinter.END, image= support_image)
             elif text=="yesand":
-                display.image_create(tkinter.END, image= yesand_image)
+                self.display.image_create(tkinter.END, image= yesand_image)
             elif text=="humour":
-                display.image_create(tkinter.END, image= humour_image)
+                self.display.image_create(tkinter.END, image= humour_image)
             elif text=="move":
-                display.image_create(tkinter.END, image= move_image)
+                self.display.image_create(tkinter.END, image= move_image)
             elif text=="block":
-                display.image_create(tkinter.END, image= block_image)
+                self.display.image_create(tkinter.END, image= block_image)
             elif text=="deviation":
-                display.image_create(tkinter.END, image= deviation_image)
+                self.display.image_create(tkinter.END, image= deviation_image)
 
-            display.see(tkinter.END)
+            ct= 1
+            for sp in current_speakers:
+                ct+= 1
+                self.display.tag_config(sp[0], foreground=sp[1])
+                if self.idea_var.get()==1:
+                    self.display.tag_config("is_idea", background="yellow")
+                    self.display.insert(tkinter.END, sp[0], (sp[0], "is_idea"))
+                else:
+                    self.display.tag_config("not_idea", background="white")
+                    self.display.insert(tkinter.END, sp[0], (sp[0], "not_idea"))
+            self.num_inserted.append(ct)
+            self.display.see(tkinter.END)
 
-        idea = Button(buttongrid, text="Idea", width=14)
-        idea.grid(row=0, column=3, columnspan=2)
+       
+        idea = tkinter.Checkbutton(buttongrid, text="Idea", variable=self.idea_var, onvalue = 1, offvalue = 0, indicatoron=0, width=15, height=1)
+        #idea = Button(buttongrid, text="Idea", width=14, command=idea)
+        idea.grid(row=2, column=3, columnspan=2)
 
-        topic = Button(buttongrid, text="Topic", width=14)
-        topic.grid(row=0, column=5, columnspan=2)
+        topic = tkinter.Button(buttongrid, text="Topic", width=13, height=1)
+        topic.grid(row=2, column=5, columnspan=2)
 
         b1 = Button(buttongrid, image=move_image, command=lambda: update_symbols("move"))
         b1.image = move_image
-        b1.grid(row=1, column=3)
+        b1.grid(row=3, column=3)
 
         b2 = Button(buttongrid, image=block_image, command=lambda: update_symbols("block"))
         b2.image = block_image
-        b2.grid(row=1, column=4)
+        b2.grid(row=3, column=4)
 
         b3 = Button(buttongrid, image=deflect_image, command=lambda: update_symbols("deflection"))
         b3.image = deflect_image
-        b3.grid(row=1, column=5)
+        b3.grid(row=3, column=5)
 
         b4 = Button(buttongrid, image=interrupt_image, command=lambda: update_symbols("interrupt"))
         b4.image = interrupt_image
-        b4.grid(row=1, column=6)
+        b4.grid(row=3, column=6)
 
         b5 = Button(buttongrid, image=humour_image, command=lambda: update_symbols("humour"))
         b5.image = humour_image
-        b5.grid(row=2, column=3)
+        b5.grid(row=4, column=3)
 
         b6 = Button(buttongrid, image=question_image, command=lambda: update_symbols("question"))
         b6.image = question_image
-        b6.grid(row=2, column=4)
+        b6.grid(row=4, column=4)
 
         b7 = Button(buttongrid, image=hesitation_image, command=lambda: update_symbols("hesitation"))
         b7.image = hesitation_image
-        b7.grid(row=2, column=5)
+        b7.grid(row=4, column=5)
 
         b8 = Button(buttongrid, image=support_image, command=lambda: update_symbols("support"))
         b8.image = support_image
-        b8.grid(row=2, column=6)
+        b8.grid(row=4, column=6)
 
         b9 = Button(buttongrid, image=overcoming_image, command=lambda: update_symbols("overcoming"))
         b9.image = overcoming_image
-        b9.grid(row=3, column=3)
+        b9.grid(row=5, column=3)
 
         b10 = Button(buttongrid, image=yesand_image, command=lambda: update_symbols("yesand"))
         b10.image = yesand_image
-        b10.grid(row=3, column=4)
+        b10.grid(row=5, column=4)
 
         b11 = Button(buttongrid, image=deviation_image, command=lambda: update_symbols("deviation"))
         b11.image = deviation_image
-        b11.grid(row=3, column=5)
+        b11.grid(row=5, column=5)
 
-        b12 = Button(buttongrid, text="", command=lambda: update_symbols(""))
-        b12.grid(row=3, column=6)
+        def undo():
+            val = self.num_inserted[-1]
+            for i in range(val):
+                self.display.delete("end-2c")
+            self.display.see(tkinter.END)
+            del self.num_inserted[-1]
+        
+        undo = tkinter.Button(buttongrid, text="Undo", command=undo, width=5)
+        undo.grid(row=5, column=6)
         #Buttons done---------------------------------------------------------
 
 def main():
