@@ -172,8 +172,9 @@ class Project:
         self.outputCode()
     def saveAsProject(self, newName):
         temp = self.projectName
-        self.projectName = newName
-        self.outputCode()
+        self.projectName = newName[newName.rfind('/')+1:-4]
+        print self.projectName
+        self.outputCode(newName)
         self.projectName = temp
     def saveAndExportImage(self):
         """ Outputs sequence to file then outputs visual code sequence.
@@ -184,7 +185,10 @@ class Project:
     def outputCode(self, newFile = None):
         """ Helper function, outputs sequence to file.
         """
-        log = open(self.logFilePath+'/'+self.projectName+'.log', 'w')
+        if newFile == None:
+            log = open(self.logFilePath+'/'+self.projectName+'.log', 'w+')
+        else:
+            log = open(newFile, 'w+')
         log.write(self.projectName+"\n")
         log.write(self.videoPath+"\n")
         log.write(str(self.numSpeaker)+"\n")

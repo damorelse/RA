@@ -126,15 +126,18 @@ class KeyboardInput(Input):
             elif ord(echar)-ord('0') >= 0 and ord(echar)-ord('0')< 10: #number
                 super(KeyboardInput, self).speaker(None, ord(echar)-ord('0'))
             elif echar == '\x1a': #Ctrl-Z
-                super(KeyboardInput, self).undo()
+                #super(KeyboardInput, self).undo()
+                pass
             elif echar == '\x08': #backspace
                 super(KeyboardInput, self).delete(None)
             elif echar == ' ': #spacebar
                 super(KeyboardInput, self).vidPlayPause(self.parent)
             elif echar == '=': #= button
-                super(KeyboardInput, self).vidSpeedUp(self.vidSpeedChange)
+                #super(KeyboardInput, self).vidSpeedUp(self.vidSpeedChange)
+                pass
             elif echar == '-': #- button
-                super(KeyboardInput, self).vidSpeedDown(self.vidSpeedChange)
+                #super(KeyboardInput, self).vidSpeedDown(self.vidSpeedChange)
+                pass
             elif echar == '\x0e': #Ctrl-N
                 super(KeyboardInput, self).newProject()
             elif echar == '\x13': #Ctrl-S
@@ -147,6 +150,7 @@ class KeyboardInput(Input):
             elif esym == 'Right':
                 super(KeyboardInput, self).vidPlayforward(self.parent)
     def key(self, event):
+         #TODO HERE
         evc = event.char
         if len(evc.lower()) != 0:
             evc = evc.lower()
@@ -441,6 +445,7 @@ class Mainframe(Frame):
         self.back.grid(row=5, column=2)
         self.imgID = 0
         self.imgMap = {}
+        self.codeMode = True
         #self.progress 
         self.var = DoubleVar()
         self.prev = 0
@@ -511,8 +516,9 @@ class Mainframe(Frame):
             self.player.set_state(gst.STATE_PAUSED)
             self.play["text"] = "Play"
             self.after_cancel(self.job)
-         
+        time.sleep(.1)
         self.duration = self.player.query_duration(gst.FORMAT_TIME, None)[0]
+        print self.duration/1000000000.0
         self.slider.configure(from_=0, to=self.duration/1000000000)
         
     def play_back(self):
@@ -610,6 +616,7 @@ class Mainframe(Frame):
             sv = StringVar()
             sv.trace("w", lambda name, index, mode, sv=sv, i=i:callback(sv, i))
             c = Entry(self.buttongrid, textvariable=sv)
+            #TODO HERE
             c.insert(0, self.project.speakerID[i+1])
             c.grid(row=i, column=1, columnspan=3)
             i += 1
@@ -690,6 +697,8 @@ class Mainframe(Frame):
                 if self.play["text"] == "Pause":
                     try:
                         timestamp = self.player.query_position(gst.FORMAT_TIME, None)[0]
+                        if timestamp >= self.duration:
+                            self.play_video()
                         self.display.mark_set("mine2", "1.%d" % floor(timestamp/1000000000.0/.2))
                         self.display.see("1.%d" % (floor(timestamp/1000000000.0/.2)+8))
                         self.display.see("mine2")
