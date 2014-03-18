@@ -4,18 +4,18 @@ from math import floor
 from export6 import *
   
 class Code:
-	""" Represents one code symbol
+    """ Represents one code symbol
 
-	Attributes:
-		time : A float of the video timestamp in seconds.
-		symbol: A string indicating the symbol type (e.g. question, support, yesand etc).
-		speaker: A list of positive integers indicating speakers.
-		idea: A boolean indicating if symbol expresses an idea.
-		topic: A boolean indicating if symbol expresses a topic change.
-		topicname : A string (deprecated). 
-		sidenotes : A string (deprecated). 
+    Attributes:
+        time : A float of the video timestamp in seconds.
+        symbol: A string indicating the symbol type (e.g. question, support, yesand etc).
+        speaker: A list of positive integers indicating speakers.
+        idea: A boolean indicating if symbol expresses an idea.
+        topic: A boolean indicating if symbol expresses a topic change.
+        topicname : A string (deprecated). 
+        sidenotes : A string (deprecated). 
 
-	"""
+    """
     def __init__(self, time, symbol, speaker=None, idea=None, topic=None, topicname=None, sidenotes=None):
         self.time = time
         self.symbol = symbol
@@ -36,17 +36,17 @@ class Code:
             self.sidenotes = ''
 
 class Sequence:
-	""" Represents a coded sequence of symbols
+    """ Represents a coded sequence of symbols
 
-	Attributes:
-		timestep : A float representing the time indexing step in seconds. Index = floor(timestamp / timestep)
-		INSERT : A string representing change type insert.
-		DELETE : A string representing change type delete.
-		UPDATE : A string representing change type update.
-		seqIndex : A map of index to Code representing the coded sequence.
-		changeType : A string representing type of last change (INSERT, DELETE, or UPDATE). (deprecated)
-		self.changeCode : A copy of the last changed Code before the change. (deprecated)
-	"""
+    Attributes:
+        timestep : A float representing the time indexing step in seconds. Index = floor(timestamp / timestep)
+        INSERT : A string representing change type insert.
+        DELETE : A string representing change type delete.
+        UPDATE : A string representing change type update.
+        seqIndex : A map of index to Code representing the coded sequence.
+        changeType : A string representing type of last change (INSERT, DELETE, or UPDATE). (deprecated)
+        self.changeCode : A copy of the last changed Code before the change. (deprecated)
+    """
     timestep = 0.2
     INSERT = 'insert'
     DELETE = 'delete'
@@ -60,15 +60,15 @@ class Sequence:
             self.changeCode = '' #updated every time a function is called
 
     def getClosestCode(self, time):
-    	""" Given timestamp in seconds, returns Code object at index if it exists.
-    	"""
+        """ Given timestamp in seconds, returns Code object at index if it exists.
+        """
         for code in self.seqIndex[int(floor(time/Sequence.timestep))]:
             if code.time == time:
                 return code
 
     def insert(self, newcode):
-    	""" Given Code object, inserts into sequence.
-    	"""
+        """ Given Code object, inserts into sequence.
+        """
         self.changeType = self.INSERT
         self.changeCode = newcode
         index = int(floor(newcode.time/Sequence.timestep))
@@ -79,8 +79,8 @@ class Sequence:
         self.seqIndex[index] = sorted(self.seqIndex[index], key=lambda x: x.time)
 
     def delete(self, curr, time):
-    	""" Given Code object or timestamp, will delete object at index.
-    	"""
+        """ Given Code object or timestamp, will delete object at index.
+        """
         self.changeType = self.DELETE
         self.changeCode = curr
         if curr is None:
@@ -89,8 +89,8 @@ class Sequence:
         self.seqIndex[index].remove(curr)
         
     def undo(self):
-    	""" Undo last Code object change.
-    	"""
+        """ Undo last Code object change.
+        """
         if self.changeType == self.DELETE:
             self.insert(self.changeCode)
             self.changeType = INSERT
@@ -105,8 +105,8 @@ class Sequence:
             self.seqIndex[index][subindex] = tmp
 
     def ideaExpression(self, curr, time):
-    	""" Change Code object to express an idea.
-    	"""
+        """ Change Code object to express an idea.
+        """
         changeType = self.UPDATE
         changeCode = curr
         if curr is None:
@@ -114,8 +114,8 @@ class Sequence:
         curr.idea = True
         
     def newTopic(self, curr, time, tname):
-    	""" Change Code object to express a change in topic. 
-    	"""
+        """ Change Code object to express a change in topic. 
+        """
         changeType = self.UPDATE
         changeCode = curr
         if curr is None:
@@ -124,8 +124,8 @@ class Sequence:
         curr.tname = tname
         
     def setSpeaker(self, curr, time, speaker):
-    	""" Change Code object's speakers.
-    	"""
+        """ Change Code object's speakers.
+        """
         changeType = self.UPDATE
         changeCode = curr
         if curr is None:
@@ -133,8 +133,8 @@ class Sequence:
         curr.speaker = speaker
         
     def editTime(self, curr, time):
-    	""" Change Code object's time.
-    	"""
+        """ Change Code object's time.
+        """
         changeType = self.UPDATE
         changeCode = curr
         if curr is None:
@@ -144,16 +144,16 @@ class Sequence:
         self.insert(curr)
             
 class Project:
-	""" Represent a project with one coding sequence.
+    """ Represent a project with one coding sequence.
 
-	Attributes:
-		projectName : A string representing the project specific name and saved session file (<name>.log).
-		videoPath : A string representing the absolute path to the video file.
-		logFilePath : A string representing the absolute path to the directory containing the log file (do not end in '/').
-		numSpeakers : An integer indicating the number of speakers.
-		speakerID : A map of integers to strings, mapping speaker number (1-based) to speaker notes.
-		seq : A Sequence object representing the coded symbols.
-	"""
+    Attributes:
+        projectName : A string representing the project specific name and saved session file (<name>.log).
+        videoPath : A string representing the absolute path to the video file.
+        logFilePath : A string representing the absolute path to the directory containing the log file (do not end in '/').
+        numSpeakers : An integer indicating the number of speakers.
+        speakerID : A map of integers to strings, mapping speaker number (1-based) to speaker notes.
+        seq : A Sequence object representing the coded symbols.
+    """
     def __init__(self, name, vidpath, logpath, numSpeakers, sID = None, inseq = None):
         self.projectName = name
         self.videoPath = vidpath
@@ -176,14 +176,14 @@ class Project:
         self.outputCode()
         self.projectName = temp
     def saveAndExportImage(self):
-    	""" Outputs sequence to file then outputs visual code sequence.
-    	"""
+        """ Outputs sequence to file then outputs visual code sequence.
+        """
         self.outputCode()
         code, speakers, timestamps = parse_file(self.projectName+'.log')
         create_file(code, speakers, timestamps, self.projectName)
     def outputCode(self, newFile = None):
-    	""" Helper function, outputs sequence to file.
-    	"""
+        """ Helper function, outputs sequence to file.
+        """
         log = open(self.logFilePath+'/'+self.projectName+'.log', 'w')
         log.write(self.projectName+"\n")
         log.write(self.videoPath+"\n")

@@ -623,7 +623,7 @@ class Mainframe(Frame):
         self.startVid()
         self.startSpeakers()
         self.num_inserted = []
-	self.var.set(0)    
+        self.var.set(0)    
 
     def deleteSymbol(self, event):
         print("delete")
@@ -786,7 +786,7 @@ class Mainframe(Frame):
         buttongrid.grid(row=0, column=8, rowspan=10, columnspan=5)
 
 
-	#Topic implementation	
+    #Topic implementation    
         self.idea_var = IntVar()
         self.topic_var = IntVar()
         idea = Checkbutton(buttongrid, text="Idea", variable=self.idea_var, onvalue = 1, offvalue = 0, indicatoron=0, height=2, width=16)
@@ -854,7 +854,7 @@ class Mainframe(Frame):
         #self.tt.daemon = True
         #self.tt.start()
         
-	#Done with topic
+    #Done with topic
 
         
         h = '44'
