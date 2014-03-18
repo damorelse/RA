@@ -451,6 +451,7 @@ class Mainframe(Frame):
         self.prev = 0
         self.flag_video_start = 0
         self.pause_changed = 0
+        self.duration = 0
 
         self.initUI()
     def getTime(self):
@@ -516,9 +517,13 @@ class Mainframe(Frame):
             self.player.set_state(gst.STATE_PAUSED)
             self.play["text"] = "Play"
             self.after_cancel(self.job)
-        time.sleep(.1)
-        self.duration = self.player.query_duration(gst.FORMAT_TIME, None)[0]
-        print self.duration/1000000000.0
+        while self.duration == 0:
+            time.sleep(.1)
+            try:
+                self.duration = self.player.query_duration(gst.FORMAT_TIME, None)[0]
+            except:
+                pass
+        #print self.duration/1000000000.0
         self.slider.configure(from_=0, to=self.duration/1000000000)
         
     def play_back(self):
@@ -698,6 +703,7 @@ class Mainframe(Frame):
                     try:
                         timestamp = self.player.query_position(gst.FORMAT_TIME, None)[0]
                         if timestamp >= self.duration:
+                            print "Gina test"
                             self.play_video()
                         self.display.mark_set("mine2", "1.%d" % floor(timestamp/1000000000.0/.2))
                         self.display.see("1.%d" % (floor(timestamp/1000000000.0/.2)+8))
