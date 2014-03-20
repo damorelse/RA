@@ -544,6 +544,11 @@ class Mainframe(Frame):
         else:
             self.player.seek_simple(gst.FORMAT_TIME, gst.SEEK_FLAG_FLUSH, 0)
             self.var.set(0)
+        if self.play["text"] == "Play":
+            timestamp = self.player.query_position(gst.FORMAT_TIME, None)[0]
+            self.display.mark_set("mine2", "1.%d" % floor(timestamp/1000000000.0/.2))
+            self.display.see("1.%d" % (floor(timestamp/1000000000.0/.2)+8))
+            self.display.see("mine2")
     def play_forward(self):
         pos_int = self.player.query_position(gst.FORMAT_TIME, None)[0]
         text = self.entry.get()
@@ -703,8 +708,8 @@ class Mainframe(Frame):
                     try:
                         timestamp = self.player.query_position(gst.FORMAT_TIME, None)[0]
                         if timestamp >= self.duration:
-                            print "Gina test"
                             self.play_video()
+                        self.display.mark_set(INSERT, "1.%d" % floor(timestamp/1000000000.0/.2))
                         self.display.mark_set("mine2", "1.%d" % floor(timestamp/1000000000.0/.2))
                         self.display.see("1.%d" % (floor(timestamp/1000000000.0/.2)+8))
                         self.display.see("mine2")
@@ -777,6 +782,7 @@ class Mainframe(Frame):
 
         #Display of symbols
         self.display = Text(self, height=4, wrap=NONE)
+        self.display.config(padx=0, insertbackground="black")
         self.display.grid(row=7, column=0, rowspan=3, columnspan=3, sticky=E+W)
         
         
