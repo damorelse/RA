@@ -1,7 +1,7 @@
 import Tkinter as tkinter
 from Tkinter import *
 from math import floor
-from export6 import *
+from export8 import *
   
 class Code:
     """ Represents one code symbol
@@ -154,7 +154,7 @@ class Project:
         speakerID : A map of integers to strings, mapping speaker number (1-based) to speaker notes.
         seq : A Sequence object representing the coded symbols.
     """
-    def __init__(self, name, vidpath, logpath, numSpeakers, sID = None, inseq = None):
+    def __init__(self, name, vidpath, logpath, numSpeakers, sID = None, inseq = None, intop = None):
         self.projectName = name
         self.videoPath = vidpath
         self.logFilePath = logpath
@@ -167,21 +167,23 @@ class Project:
         self.seq = Sequence()
         if inseq != None:
              self.seq = inseq
+        self.topics = {}
+        if intop != None:
+            self.topics = intop
 
     def saveProject(self):
         self.outputCode()
     def saveAsProject(self, newName):
         temp = self.projectName
         self.projectName = newName[newName.rfind('/')+1:-4]
-        print self.projectName
         self.outputCode(newName)
         self.projectName = temp
     def saveAndExportImage(self):
         """ Outputs sequence to file then outputs visual code sequence.
         """
         self.outputCode()
-        code, speakers, timestamps = parse_file(self.projectName+'.log')
-        create_file(code, speakers, timestamps, self.projectName)
+        code, speakers, timestamps, topics = parse_file(self.logFilePath+'/'+self.projectName+'.log')
+        create_topicfile(code, speakers, timestamps, topics, self.projectName)
     def outputCode(self, newFile = None):
         """ Helper function, outputs sequence to file.
         """
@@ -199,16 +201,9 @@ class Project:
         for bucket in sorted(self.seq.seqIndex.keys()):
             for code in self.seq.seqIndex[bucket]:
                 log.write(str(code.time)+"\t"+code.symbol+"\t"+str(code.speaker)+"\t"+str(code.idea)+"\t"+str(code.topic)+"\t"+code.tname+"\t"+code.sidenotes+"\n")
-                
+        
+        log.write("\n")
+        for start in sorted(self.topics.keys()):
+            log.write(str(start)+"\t"+str(self.topics[start])+"\n")
+             
 
-
-def main():  
-    root = Tk()
-    root.geometry("350x300+300+300")
-    p = Project('test', 'blah', '', 2)
-    KeyboardInput(root, p)
-    MouseInput(root, p)
-    root.mainloop()  
-
-if __name__ == '__main__':
-    main()

@@ -12,7 +12,7 @@ import time
 import tkMessageBox
 from abc import ABCMeta, abstractmethod
 from bisect import bisect_right
-from background7 import *
+from background8 import *
 
 class Input(object):
     __metaclass__ = ABCMeta
@@ -240,35 +240,42 @@ class OldProjectDialog(Frame):
             codes = {}
             prevtime = 0
             for i in range(5+numSpeaker, len(content)):
-                if len(content[i]) > 0:
-                    info = content[i].split('\t')
-                    for i in range(len(info), 7):
-                        info.append('');
-                    if info[3] == 'False':
-                        info[3] = False
-                    else:
-                        info[3] = True
-                    if info[4] == 'False':
-                        info[4] = False
-                    else:
-                        info[4] = True
-                    speakers = []
-                    if len(info[2]) > 2:
-                        speakers = [int(x) for x in info[2][1:-1].split(',')]
-                    tmp = Code(float(info[0]), info[1], speakers, info[3], info[4], info[5], info[6].rstrip())
-                    #for i in range(len(codes), int(floor(float(info[0])/Sequence.timestep))+1):
-                    #    codes.append([])
-                    #codes[int(floor(float(info[0])/Sequence.timestep))].append(tmp)
-                    if int(floor(float(info[0])/Sequence.timestep)) in codes.keys():
-                        codes[int(floor(float(info[0])/Sequence.timestep))].append(tmp)
-                    else:
-                        codes[int(floor(float(info[0])/Sequence.timestep))] = [tmp]
-                    for i in range(int(floor(float(info[0])/.2)) - prevtime):
-                        self.parent.display.image_create('1.end', image=self.parent.imagemap['blank'])
-                    self.parent.update_symbols(info[1], float(info[0])*1000000000.0, speakers, info[3])
-                    prevtime = int(floor(float(info[0])/.2))
+                if len(content[i]) == 1:
+                    start = i+1
+                    break
+                info = content[i].split('\t')
+                for i in range(len(info), 7):
+                    info.append('');
+                if info[3] == 'False':
+                    info[3] = False
+                else:
+                    info[3] = True
+                if info[4] == 'False':
+                    info[4] = False
+                else:
+                    info[4] = True
+                speakers = []
+                if len(info[2]) > 2:
+                    speakers = [int(x) for x in info[2][1:-1].split(',')]
+                tmp = Code(float(info[0]), info[1], speakers, info[3], info[4], info[5], info[6].rstrip())
+                #for i in range(len(codes), int(floor(float(info[0])/Sequence.timestep))+1):
+                #    codes.append([])
+                #codes[int(floor(float(info[0])/Sequence.timestep))].append(tmp)
+                if int(floor(float(info[0])/Sequence.timestep)) in codes.keys():
+                    codes[int(floor(float(info[0])/Sequence.timestep))].append(tmp)
+                else:
+                    codes[int(floor(float(info[0])/Sequence.timestep))] = [tmp]
+                for i in range(int(floor(float(info[0])/.2)) - prevtime):
+                    self.parent.display.image_create('1.end', image=self.parent.imagemap['blank'])
+                self.parent.update_symbols(info[1], float(info[0])*1000000000.0, speakers, info[3])
+                prevtime = int(floor(float(info[0])/.2))
+
+            top = {}
+            for i in range(start, len(content)):
+                info = content[i].rstrip().split('\t')
+                top[float(info[0])] = float(info[1])
             seq = Sequence(codes)
-            self.parent.getProject(Project(name.rstrip(), vidPath.rstrip(), '/'.join(filename.rstrip().split('/')[0:-1]), numSpeaker, speakerID, seq))
+            self.parent.getProject(Project(name.rstrip(), vidPath.rstrip(), '/'.join(filename.rstrip().split('/')[0:-1]), numSpeaker, speakerID, seq, top))
         except Exception:
             ErrorDialog(self.parent, "Error while reading log file. Check file format.")
  
@@ -419,7 +426,7 @@ class Mainframe(Frame):
         self.alpha = ['A','B','C','D','E','F','G','H','I']
         self.colors = ["blue", "green", "yellow", "orange", "pink", "purple", "red", "brown", "black"]
         self.imagemap = {}
-        h = 30
+        h = 35
         w = 50
         self.imagemap['deflection'] = PhotoImage(file=self.imgDir+"deflection.gif", height=h, width=w)
         self.imagemap['question'] = PhotoImage(file=self.imgDir+"question.gif", height=h, width=w)
@@ -463,7 +470,7 @@ class Mainframe(Frame):
                 image_sink = message.src
                 image_sink.set_property('force-aspect-ratio', True)
                 self.lock.acquire()
-                #image_sink.set_xwindow_id(window_id)
+                image_sink.set_xwindow_id(window_id)
                 self.lock.release()
 
     def on_message(self, bus, message, window_id):
@@ -632,7 +639,25 @@ class Mainframe(Frame):
             i += 1
 
         #Done with speakers
+    def loadTopics(self):
+        insert = 1
+        col_map = {0 : "red", 1 : "blue", 2 : "green", 3 : "yellow"}
+        self.topic_change_var = 0
 
+        for i in range(4):
+            topic_col = col_map[i]
+            self.topic_display.tag_config(str(i), background=topic_col)
+        self.topic_display.config(state=NORMAL)
+        self.topic_display.delete(1.0, END)
+        self.topicst = sorted(self.topic.keys())
+        for key in self.topicst:
+            self.topic_change_var = self.topic_change_var %4
+            self.topic_display.insert("%d.0" % (insert), str(key)+"-"+str(self.topic[key])+"\n", (str(key), str(self.topic_change_var)))
+            insert += 1
+            self.topic_change_var += 1
+        self.topic_display.see("%d.0" % (insert))
+        self.topic_display.config(state=DISABLED)
+        
     def getProject(self, inp):
         self.project = inp
         self.NUM_SPEAKERS = self.project.numSpeaker 
@@ -640,7 +665,9 @@ class Mainframe(Frame):
         self.startVid()
         self.startSpeakers()
         self.num_inserted = []
-        self.var.set(0)    
+        self.var.set(0)  
+        self.topic = self.project.topics  
+        self.loadTopics()
 
     def deleteSymbol(self, event):
         print("delete")
@@ -754,10 +781,10 @@ class Mainframe(Frame):
        
         
         #Create analysis window here
-        #def do_popup_analysis():
-        #    new_frame = Tkinter.Tk()
+        def do_popup_analysis():
+            new_frame = Tkinter.Tk()
             
-        #menubar.add_command(label="Analysis", command=do_popup_analysis)
+        menubar.add_command(label="Analysis", command=do_popup_analysis)
 
         #def do_popup_plot():
         #    new_frame = Tkinter.Tk()
@@ -784,7 +811,11 @@ class Mainframe(Frame):
         self.display = Text(self, height=4, wrap=NONE)
         self.display.config(padx=0, insertbackground="black")
         self.display.grid(row=7, column=0, rowspan=3, columnspan=3, sticky=E+W)
-        
+        """
+        self.display2 = Text(self, height=4, wrap=NONE)
+        self.display2.config(padx=0, insertbackground="black")
+        self.display2.grid(row=8, column=0, rowspan=3, columnspan=3, sticky=E+W)
+        """
         
         #scrollbar = Scrollbar(self, orient=HORIZONTAL, command=self.display.xview) #remove seekbar
         #scrollbar.grid(row=10,column=0, columnspan=3, sticky=N+S+E+W)
@@ -816,6 +847,10 @@ class Mainframe(Frame):
         
         def delTopic(event):
             line = self.topic_display.index(CURRENT).split(".")[0]
+            text = self.topic_display.get(""+line+".0", str(int(line)+1)+".0")
+            text = float(text.split('-')[0])
+            self.topicst.remove(text)
+            self.topic.pop(text)
             self.topic_display.config(state=NORMAL)
             self.topic_display.delete(""+line+".0", ""+str(int(line)+1)+".0")
             self.topic_display.config(state=DISABLED)
@@ -833,7 +868,7 @@ class Mainframe(Frame):
         scrollbar2.grid(row=15,column=3, sticky=N+S+E)
         self.display['yscrollcommand'] = scrollbar2.set
         
-        self.topics = []
+        self.topicst = []
         def change_color():
             self.topic_change_var = self.topic_change_var %4
             col_map = {0 : "red", 1 : "blue", 2 : "green", 3 : "yellow"}
@@ -844,11 +879,13 @@ class Mainframe(Frame):
                 self.topic_change_var += 1
             else:
                 self.topic_display.config(state=NORMAL)
-                topic_col = col_map[(self.topic_change_var-1)%4]
+                end = self.player.query_position(gst.FORMAT_TIME, None)[0]/1000000000.0
+                topic_col = col_map[(self.topic_change_var)%4]
                 self.topic_display.tag_config(str(self.topic_change_var), background=topic_col)
-                insert = bisect_right(self.topics, self.timest/1000000000.0)
-                self.topics.insert(insert, self.timest/1000000000.0)
-                self.topic_display.insert("%d.0" % (insert+1), str(self.timest/1000000000.0)+"-"+str(self.player.query_position(gst.FORMAT_TIME, None)[0]/1000000000.0)+"\n", (str(self.timest/1000000000.0), str(self.topic_change_var)))
+                insert = bisect_right(self.topicst, self.timest/1000000000.0)
+                self.topicst.insert(insert, self.timest/1000000000.0)
+                self.topic[self.timest/1000000000.0] = end
+                self.topic_display.insert("%d.0" % (insert+1), str(self.timest/1000000000.0)+"-"+str(end)+"\n", (str(self.timest/1000000000.0), str(self.topic_change_var)))
                 self.topic_display.see("%d.0" % (insert+1))
                 topic_indicator.configure(bg="gray")
                 self.topic_display.config(state=DISABLED)
@@ -857,28 +894,11 @@ class Mainframe(Frame):
         #topic.bind("<Shift_L>", change_color())
         
         
-        #def update_topInd(): #TODO: change colors on playback
-        #    while True:
-        #        if self.play["text"] == "Pause":
-        #            try:
-        #                timestamp = self.player.query_position(gst.FORMAT_TIME, None)[0]/1000000000.0
-        #                insert = bisect_right(self.topics, timestamp)
-        #                if insert > 0 and float(self.topic_display.get("%d.0" % (insert), "%d.end" % (insert)).split('-')[1]) >= timestamp:
-        #                    #topic_indicator.configure(bg= #get color in self.topic_display at line insert
-        #                    pass
-        #                time.sleep(.1)
-        #            except:
-        #                continue
-        #        else:
-        #            time.sleep(.2)
-        #self.tt = threading.Thread(target=update_topInd)
-        #self.tt.daemon = True
-        #self.tt.start()
         
     #Done with topic
 
         
-        h = '44'
+        h = '48'
         w = '40'
         c = "top"
         codemap = {
